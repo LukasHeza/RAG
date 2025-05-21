@@ -17,18 +17,18 @@ from langchain_community.vectorstores import DistanceStrategy
 
 from utils import *
 
-
 #self.retrieval = AutoModelForSentenceEmbeddings(**retrieval_config)
 #self.tokenizer_reranker = AutoTokenizer.from_pretrained(**generator_config)
     
 class RAG_Chatbot:
-    
+
     def __init__(self,
                  retrieval_config = retrieval_config,
                  reranker_config = reranker_config,
                  generator_config = generator_config,
                  docs_path = r'./src/Documents',
                  output_path = r'./src/Output',
+                 embeddings_path =  r'./src/Embeddings',
                  loader_cls = PyPDFLoader,
                  chunk_size = 512,
                  separators = ['\n\n','\n',' ',''],
@@ -43,6 +43,7 @@ class RAG_Chatbot:
         self.tokenizer_generator = AutoTokenizer.from_pretrained(**generator_config)
         self.docs_path = docs_path
         self.output_path = output_path
+        self.embeddings_path = embeddings_path
         self.loader_cls = loader_cls
         self.chunk_size = chunk_size
         self.separators = separators
@@ -99,6 +100,9 @@ class RAG_Chatbot:
         return build_retrieval_output(indexes,scores,query,documents)
 
     def generate_answer(self,query):
+        # Query as a list
+        if type(query) == str:
+            query = [query]
         # Initialize generation objects
         device = self.device
         tokenizer = self.tokenizer_generator
@@ -107,9 +111,19 @@ class RAG_Chatbot:
         model = self.generator
         # Retrieve top similar documents
         batch_size = self.batch_size
-        documents = self.load_documents()
-        document_contents = [document.page_content for document in documents]
-        document_embeddings = self.get_embeddings(document_contents,batch_size)
+        embeddings_path = self.embeddings_path 
+        if os.path.exists(embeddings_path) == False:
+            documents = self.load_documents()
+            document_contents = [document.page_content for document in documents]
+            document_embeddings = self.get_embeddings(document_contents,batch_size)
+            os.makedirs(embeddings_path)
+            with open(embeddings_path+'/documents.pickle','wb') as file:
+                pickle.dump(documents,file)
+            torch.save(document_embeddings,embeddings_path +'/embeddings.pt')
+        else: 
+            with open(embeddings_path+'/documents.pickle','rb') as file:
+                documents = pickle.load(file) 
+            document_embeddings = torch.load(embeddings_path +'/embeddings.pt')
         query_embeddings = self.get_embeddings(query)
         query_top_documents = self.retrieve_top_k(query_embeddings,document_embeddings,query,documents)
         # Generate answers
@@ -151,8 +165,6 @@ if __name__ == '__main__':
 
     #query = 'What attention is used in Llama 3?'
     #query = query[0:5]
-    if type(query) == str:
-        query = [query]
     output,retrieval_output = rag.generate_answer(query)
     complete_output = build_complete_output(output,retrieval_output)
     output_df = pd.DataFrame.from_dict(output)

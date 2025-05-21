@@ -40,6 +40,7 @@ Libraries:
 LLMs arXiv release papers can be found in the `./src/Documents`. The `rag.py` script is in the `./src/Model`.  
 ```
 .
+├── README.md
 ├── requirements.txt
 └── src
     ├── Documents
@@ -48,15 +49,14 @@ LLMs arXiv release papers can be found in the `./src/Documents`. The `rag.py` sc
     │   ├── 2408.00118v3.pdf
     │   ├── 2410.21276v1.pdf
     │   └── Model_Card_Claude_3.pdf
+    ├── Embeddings
     ├── Model
     │   ├── __pycache__
+    │   │   ├── rag.cpython-311.pyc
     │   │   └── utils.cpython-311.pyc
     │   ├── rag.py
     │   └── utils.py
     └── Output
-        ├── complete_output.csv
-        ├── output.csv
-        └── retrieval_output.csv
 ```
 To run inference use the [Kaggle notebook](https://www.kaggle.com/code/lukasheza/rag-inference).
 ```
